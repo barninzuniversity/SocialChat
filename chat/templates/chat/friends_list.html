@@ -1,0 +1,51 @@
+{% extends 'chat/base.html' %}
+
+{% block title %}Friends | LiveChat{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">My Friends</h5>
+                <a href="{% url 'search_users' %}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-user-plus me-1"></i> Add New Friends
+                </a>
+            </div>
+            <div class="card-body">
+                {% if friends %}
+                <div class="list-group">
+                    {% for friend in friends %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <img src="{{ friend.avatar.url }}" alt="{{ friend.user.username }}" class="profile-avatar-sm me-3">
+                                <div>
+                                    <h6 class="mb-0">{{ friend.user.username }}</h6>
+                                </div>
+                            </div>
+                            <div>
+                                <a href="{% url 'profile_detail' friend.user.username %}" class="btn btn-sm btn-outline-secondary me-2">
+                                    <i class="fas fa-user me-1"></i> View
+                                </a>
+                                <a href="{% url 'create_or_get_direct_chat' friend.user.username %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-comments me-1"></i> Message
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-user-friends mb-3" style="font-size: 3rem; color: #ccc;"></i>
+                    <h5>You don't have any friends yet</h5>
+                    <p class="text-muted">Search for users and send friend requests to connect with others.</p>
+                    <a href="{% url 'search_users' %}" class="btn btn-primary">Find Friends</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

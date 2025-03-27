@@ -1,0 +1,734 @@
+{% extends 'chat/base.html' %}
+
+{% block title %}Home | LiveChat{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Left sidebar - Friend requests -->
+    <div class="col-md-3">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Friend Requests</h5>
+            </div>
+            <div class="card-body">
+                {% if friend_requests %}
+                    {% for request in friend_requests %}
+                    <div class="friend-request">
+                        <div class="d-flex align-items-center mb-2">
+                            <img src="{{ request.from_user.avatar.url }}" alt="{{ request.from_user.user.username }}" class="profile-avatar-sm me-2">
+                            <a href="{% url 'profile_detail' request.from_user.user.username %}">
+                                {{ request.from_user.user.username }}
+                            </a>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'respond_friend_request' request.id 'accept' %}" class="btn btn-sm btn-success">Accept</a>
+                            <a href="{% url 'respond_friend_request' request.id 'reject' %}" class="btn btn-sm btn-secondary">Reject</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="mb-0 text-muted">No pending friend requests</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Center - Feed -->
+    <div class="col-md-6">
+        <!-- Create Post -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Create a Post</h5>
+                <form method="post" action="{% url 'home' %}" enctype="multipart/form-data" id="post-form">
+                    {% csrf_token %}
+                    {{ form.content }}
+                    
+                    <div class="mt-3">
+                        <h6>Upload Media</h6>
+                        <div class="upload-area" id="upload-area">
+                            <input type="file" name="image" id="{{ form.image.id_for_label }}" class="file-input" accept="image/*" style="display: none;">
+                            <input type="file" name="video" id="{{ form.video.id_for_label }}" class="file-input" accept="video/*" style="display: none;">
+                            <div class="upload-drop-zone" id="upload-drop-zone">
+                                <i class="fas fa-cloud-upload-alt mb-2" style="font-size: 2rem;"></i>
+                                <p class="mb-0">Drag & drop files here or click to browse</p>
+                            </div>
+                            <div id="preview-container" class="mt-2 d-none">
+                                <div class="d-flex align-items-center">
+                                    <div id="file-preview" class="me-2"></div>
+                                    <button type="button" class="btn btn-sm btn-danger" id="remove-file">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary mt-3">Post</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Posts Feed -->
+        {% if posts %}
+            {% for post in posts %}
+            <div class="card mb-3" data-post-id="{{ post.id }}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ post.author.avatar.url }}" alt="{{ post.author.user.username }}" class="profile-avatar-sm me-2">
+                            <div>
+                                <a href="{% url 'profile_detail' post.author.user.username %}" class="text-decoration-none fw-bold">
+                                    {{ post.author.user.username }}
+                                </a>
+                                <div class="text-muted small">{{ post.created_at|date:"F j, Y, g:i a" }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light" type="button" id="dropdownMenuButton-{{ post.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton-{{ post.id }}">
+                                {% if post.author.user == user %}
+                                <li>
+                                    <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deletePostModal-{{ post.id }}">
+                                        <i class="fas fa-trash-alt me-2"></i> Delete Post
+                                    </button>
+                                </li>
+                                {% else %}
+                                <li>
+                                    <a href="{% url 'block_post' post.id %}" class="dropdown-item text-warning">
+                                        <i class="fas fa-ban me-2"></i> Block Post
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{% url 'block_user' post.author.user.username %}" class="dropdown-item text-warning">
+                                        <i class="fas fa-user-slash me-2"></i> Block {{ post.author.user.username }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Check if this is a shared post -->
+                    {% for shared in post.post_shares.all %}
+                        {% if shared.shared_with == user.profile %}
+                            <div class="shared-content mb-3 p-2 bg-light rounded">
+                                <div class="d-flex align-items-center mb-2">
+                                    <img src="{{ shared.shared_by.avatar.url }}" alt="{{ shared.shared_by.user.username }}" class="profile-avatar-sm me-2">
+                                    <div>
+                                        <span class="fw-bold">{{ shared.shared_by.user.username }}</span> shared this post with you
+                                        <div class="small text-muted">{{ shared.created_at|date:"F j, Y, g:i a" }}</div>
+                                    </div>
+                                </div>
+                                {% if shared.comment %}
+                                    <div class="shared-comment mb-2 border-start border-3 ps-2">
+                                        {{ shared.comment }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% with repost=post.repost_of.first %}
+                        {% if repost %}
+                            <div class="reposted-by mb-3">
+                                <p class="small text-muted mb-1">
+                                    <i class="fas fa-retweet me-1"></i> Reposted by {{ post.author.user.username }}
+                                </p>
+                            </div>
+                            {% with original_post=repost.original_post %}
+                                {% include 'chat/repost_content.html' with post=post original_post=original_post %}
+                            {% endwith %}
+                        {% else %}
+                            <p class="card-text">{{ post.content }}</p>
+                            
+                            {% if post.image %}
+                            <div class="mt-2 mb-3">
+                                <img src="{{ post.image.url }}" alt="Post image" class="img-fluid rounded">
+                            </div>
+                            {% endif %}
+                            
+                            {% if post.video %}
+                            <div class="mt-2 mb-3">
+                                <video controls class="w-100 rounded">
+                                    <source src="{{ post.video.url }}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <!-- Post Actions -->
+                    <div class="post-actions border-top pt-3 mt-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <!-- Reactions count -->
+                            <div class="reactions-count" data-post-id="{{ post.id }}">
+                                {% with reaction_count=post.reactions.count %}
+                                    {% if reaction_count > 0 %}
+                                        <span class="reactions-badge">
+                                            <i class="fas fa-thumbs-up text-primary"></i>
+                                            <span class="ms-1">{{ reaction_count }}</span>
+                                        </span>
+                                    {% endif %}
+                                {% endwith %}
+                            </div>
+                            
+                            <!-- Comments and shares count -->
+                            <div class="comments-shares-count">
+                                {% with comments_count=post.comments.count shares_count=post.post_shares.count %}
+                                    {% if comments_count > 0 %}
+                                        <span class="small text-muted me-2 comments-count" data-post-id="{{ post.id }}">{{ comments_count }} comment{{ comments_count|pluralize }}</span>
+                                    {% endif %}
+                                    {% if shares_count > 0 %}
+                                        <span class="small text-muted">{{ shares_count }} share{{ shares_count|pluralize }}</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                        
+                        <!-- Action buttons -->
+                        <div class="d-flex justify-content-between">
+                            <div class="btn-group reaction-btn-group" role="group">
+                                <button type="button" class="btn btn-light rounded-pill reaction-btn {% if user_reaction %}active{% endif %}" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="{% if user_reaction %}fas text-primary{% else %}far{% endif %} fa-thumbs-up me-1"></i> 
+                                    {% if user_reaction %}
+                                        {{ user_reaction.reaction_type|title }}
+                                    {% else %}
+                                        Like
+                                    {% endif %}
+                                </button>
+                                <div class="dropdown-menu reactions-dropdown p-1">
+                                    <div class="d-flex">
+                                        <button type="button" class="btn btn-reaction" data-reaction="like" data-post="{{ post.id }}"
+                                                hx-post="{% url 'add_post_reaction' post.id %}" 
+                                                hx-vals='{"reaction_type": "like"}'
+                                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' 
+                                                hx-swap="none">
+                                            <span class="reaction-emoji">👍</span>
+                                            <span class="reaction-text">Like</span>
+                                        </button>
+                                        <button type="button" class="btn btn-reaction" data-reaction="love" data-post="{{ post.id }}"
+                                                hx-post="{% url 'add_post_reaction' post.id %}" 
+                                                hx-vals='{"reaction_type": "love"}'
+                                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' 
+                                                hx-swap="none">
+                                            <span class="reaction-emoji">❤️</span>
+                                            <span class="reaction-text">Love</span>
+                                        </button>
+                                        <button type="button" class="btn btn-reaction" data-reaction="haha" data-post="{{ post.id }}"
+                                                hx-post="{% url 'add_post_reaction' post.id %}" 
+                                                hx-vals='{"reaction_type": "haha"}'
+                                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' 
+                                                hx-swap="none">
+                                            <span class="reaction-emoji">😂</span>
+                                            <span class="reaction-text">Haha</span>
+                                        </button>
+                                        <button type="button" class="btn btn-reaction" data-reaction="wow" data-post="{{ post.id }}"
+                                                hx-post="{% url 'add_post_reaction' post.id %}" 
+                                                hx-vals='{"reaction_type": "wow"}'
+                                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' 
+                                                hx-swap="none">
+                                            <span class="reaction-emoji">😮</span>
+                                            <span class="reaction-text">Wow</span>
+                                        </button>
+                                        <button type="button" class="btn btn-reaction" data-reaction="sad" data-post="{{ post.id }}"
+                                                hx-post="{% url 'add_post_reaction' post.id %}" 
+                                                hx-vals='{"reaction_type": "sad"}'
+                                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' 
+                                                hx-swap="none">
+                                            <span class="reaction-emoji">😢</span>
+                                            <span class="reaction-text">Sad</span>
+                                        </button>
+                                        <button type="button" class="btn btn-reaction" data-reaction="angry" data-post="{{ post.id }}"
+                                                hx-post="{% url 'add_post_reaction' post.id %}" 
+                                                hx-vals='{"reaction_type": "angry"}'
+                                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' 
+                                                hx-swap="none">
+                                            <span class="reaction-emoji">😡</span>
+                                            <span class="reaction-text">Angry</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-light rounded-pill comment-toggle-btn" data-bs-toggle="collapse" data-bs-target="#commentSection-{{ post.id }}">
+                                <i class="far fa-comment me-1"></i> Comment
+                            </button>
+                            <a href="{% url 'repost' post.id %}" class="btn btn-light rounded-pill repost-btn">
+                                <i class="fas fa-retweet me-1"></i> Repost
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Comments Section (Collapsed by default) -->
+                    <div class="collapse mt-3" id="commentSection-{{ post.id }}">
+                        <div class="card card-body bg-light p-2">
+                            <!-- Comment Form -->
+                            <div class="d-flex mb-2">
+                                <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="profile-avatar-sm me-2">
+                                <div class="flex-grow-1">
+                                    <form class="comment-form" 
+                                          data-post-id="{{ post.id }}"
+                                          hx-post="{% url 'add_comment' post.id %}"
+                                          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' 
+                                          hx-swap="none">
+                                        {% csrf_token %}
+                                        <div class="input-group">
+                                            <input type="text" class="form-control bg-white rounded-pill" 
+                                                   placeholder="Write a comment..." 
+                                                   name="content" 
+                                                   autocomplete="off">
+                                            <button type="submit" class="btn btn-primary rounded-circle ms-2">
+                                                <i class="fas fa-paper-plane"></i>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            
+                            <!-- Comments List -->
+                            <div id="commentsList-{{ post.id }}" 
+                                 class="comments-list"
+                                 hx-get="{% url 'get_comments' post.id %}"
+                                 hx-trigger="revealed"
+                                 hx-swap="innerHTML"
+                                 hx-preserve="true">
+                                {% for comment in post.comments.all %}
+                                    <div class="comment d-flex mb-2" data-comment-id="{{ comment.id }}">
+                                        <img src="{{ comment.author.avatar.url }}" alt="{{ comment.author.user.username }}" class="profile-avatar-sm me-2">
+                                        <div class="comment-content bg-white p-2 rounded flex-grow-1 shadow-sm">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <a href="{% url 'profile_detail' comment.author.user.username %}" class="fw-bold text-decoration-none">{{ comment.author.user.username }}</a>
+                                                    {% if comment.parent_comment %}
+                                                    <span class="reply-indicator">
+                                                        <i class="fas fa-reply text-muted mx-1" style="font-size: 0.7rem;"></i>
+                                                        <a href="#comment-{{ comment.parent_comment.id }}" class="text-muted text-decoration-none" style="font-size: 0.8rem;">@{{ comment.parent_comment.author.user.username }}</a>
+                                                    </span>
+                                                    {% endif %}
+                                                    <p class="mb-0 text-dark">{{ comment.content }}</p>
+                                                </div>
+                                                <small class="text-muted ms-2">{{ comment.created_at|timesince }}</small>
+                                            </div>
+                                            
+                                            <!-- Comment reactions -->
+                                            <div class="comment-actions d-flex mt-2">
+                                                <button class="btn btn-sm btn-link p-0 me-2 comment-reaction-btn {% if comment.user_has_reacted %}active{% endif %}" 
+                                                        data-comment-id="{{ comment.id }}"
+                                                        hx-post="{% url 'add_comment_reaction' comment.id %}"
+                                                        hx-vals='{"reaction_type": "like"}'
+                                                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' 
+                                                        hx-target="closest .comment-reaction-btn"
+                                                        hx-swap="outerHTML">
+                                                    <i class="{% if comment.user_has_reacted %}fas{% else %}far{% endif %} fa-thumbs-up me-1"></i> Like
+                                                    <span class="reaction-count">{{ comment.reactions.count }}</span>
+                                                </button>
+                                                <button class="btn btn-sm btn-link p-0 comment-reply-btn" 
+                                                        data-comment-id="{{ comment.id }}"
+                                                        data-username="{{ comment.author.user.username }}">
+                                                    <i class="far fa-comment me-1"></i> Reply
+                                                </button>
+                                            </div>
+
+                                            <!-- Reply form (hidden by default) -->
+                                            <div class="reply-form-container d-none" id="reply-form-{{ comment.id }}">
+                                                <form class="comment-reply-form d-flex align-items-start mt-2" data-comment-id="{{ comment.id }}">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="parent_comment_id" value="{{ comment.id }}">
+                                                    <div class="form-group flex-grow-1 me-2">
+                                                        <div class="input-group">
+                                                            <input type="text" name="content" class="form-control form-control-sm" 
+                                                                   placeholder="Reply to @{{ comment.author.user.username }}..." required>
+                                                            <button type="submit" class="btn btn-primary btn-sm">
+                                                                <i class="fas fa-paper-plane"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                            
+                                            <!-- Replies section -->
+                                            {% if comment.replies.exists %}
+                                            <div class="comment-replies mt-2 ps-3 border-start">
+                                                {% for reply in comment.replies.all %}
+                                                <div class="reply d-flex mb-2" data-comment-id="{{ reply.id }}">
+                                                    <img src="{{ reply.author.avatar.url }}" alt="{{ reply.author.user.username }}" class="profile-avatar-sm me-2" style="width: 24px; height: 24px;">
+                                                    <div class="reply-content bg-white p-2 rounded flex-grow-1 shadow-sm">
+                                                        <div class="d-flex justify-content-between align-items-start">
+                                                            <div>
+                                                                <a href="{% url 'profile_detail' reply.author.user.username %}" class="fw-bold text-decoration-none">{{ reply.author.user.username }}</a>
+                                                                <p class="mb-0 text-dark">{{ reply.content }}</p>
+                                                            </div>
+                                                            <small class="text-muted ms-2">{{ reply.created_at|timesince }}</small>
+                                                        </div>
+                                                        <!-- Reply reactions -->
+                                                        <div class="reply-actions d-flex mt-1">
+                                                            <button class="btn btn-sm btn-link p-0 me-2 comment-reaction-btn {% if reply.user_has_reacted %}active{% endif %}" 
+                                                                    data-comment-id="{{ reply.id }}"
+                                                                    hx-post="{% url 'add_comment_reaction' reply.id %}"
+                                                                    hx-vals='{"reaction_type": "like"}'
+                                                                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' 
+                                                                    hx-target="closest .comment-reaction-btn"
+                                                                    hx-swap="outerHTML">
+                                                                <i class="{% if reply.user_has_reacted %}fas{% else %}far{% endif %} fa-thumbs-up me-1"></i> 
+                                                                <span class="reaction-count">{{ reply.reactions.count }}</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% empty %}
+                                    <p class="text-muted small text-center my-2">No comments yet</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Delete Post Modal -->
+            {% if post.author.user == user %}
+            <div class="modal fade" id="deletePostModal-{{ post.id }}" tabindex="-1" aria-labelledby="deletePostModalLabel-{{ post.id }}" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="deletePostModalLabel-{{ post.id }}">Delete Post</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure you want to delete this post? This action cannot be undone.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <form action="{% url 'delete_post' post.id %}" method="POST">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                No posts to show. Add some friends or create a post!
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Right sidebar - Suggestions -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Links</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="{% url 'friends_list' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user-friends me-2"></i> View All Friends
+                    </a>
+                    <a href="{% url 'search_users' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-search me-2"></i> Find New Friends
+                    </a>
+                    <a href="{% url 'chat_list' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-comments me-2"></i> Chat Messages
+                    </a>
+                    <a href="{% url 'profile_detail' user.username %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user me-2"></i> My Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropZone = document.getElementById('upload-drop-zone');
+        const fileInputImage = document.getElementById('{{ form.image.id_for_label }}');
+        const fileInputVideo = document.getElementById('{{ form.video.id_for_label }}');
+        const previewContainer = document.getElementById('preview-container');
+        const filePreview = document.getElementById('file-preview');
+        const removeFileBtn = document.getElementById('remove-file');
+        let currentFileType = null;
+        
+        // Open file browser when clicking on the drop zone
+        dropZone.addEventListener('click', function() {
+            // Default to images
+            fileInputImage.click();
+        });
+        
+        // Handle drag and drop events
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropZone.classList.add('dragover');
+        }
+        
+        function unhighlight() {
+            dropZone.classList.remove('dragover');
+        }
+        
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                const file = files[0];
+                handleFile(file);
+            }
+        }
+        
+        // Handle file input change for images
+        fileInputImage.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                if (!file.type.startsWith('image/')) {
+                    alert('Please select an image file.');
+                    this.value = '';
+                    return;
+                }
+                handleFile(file, 'image');
+            }
+        });
+        
+        // Handle file input change for videos
+        fileInputVideo.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                if (!file.type.startsWith('video/')) {
+                    alert('Please select a video file.');
+                    this.value = '';
+                    return;
+                }
+                handleFile(file, 'video');
+            }
+        });
+        
+        function handleFile(file, fileType) {
+            // Clear previous preview
+            filePreview.innerHTML = '';
+            
+            // Determine file type if not specified
+            if (!fileType) {
+                if (file.type.startsWith('image/')) {
+                    fileType = 'image';
+                } else if (file.type.startsWith('video/')) {
+                    fileType = 'video';
+                } else {
+                    alert('Please select an image or video file.');
+                    return;
+                }
+            }
+            
+            currentFileType = fileType;
+            
+            // Create preview based on file type
+            if (fileType === 'image') {
+                const img = document.createElement('img');
+                img.classList.add('img-preview');
+                img.style.maxHeight = '100px';
+                img.style.maxWidth = '200px';
+                img.style.borderRadius = '5px';
+                
+                // Use FileReader to load image
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                
+                filePreview.appendChild(img);
+                
+                // Clear video input if we're uploading an image
+                fileInputVideo.value = '';
+                
+                // Add file to the image input
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInputImage.files = dataTransfer.files;
+            } else if (fileType === 'video') {
+                const video = document.createElement('video');
+                video.classList.add('video-preview');
+                video.style.maxHeight = '100px';
+                video.style.maxWidth = '200px';
+                video.style.borderRadius = '5px';
+                video.controls = true;
+                
+                // Use FileReader for video preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    video.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                
+                filePreview.appendChild(video);
+                
+                // Clear image input if we're uploading a video
+                fileInputImage.value = '';
+                
+                // Add file to the video input
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInputVideo.files = dataTransfer.files;
+            }
+            
+            // Add filename
+            const fileNameEl = document.createElement('div');
+            fileNameEl.classList.add('file-name', 'mt-1');
+            fileNameEl.textContent = file.name;
+            filePreview.appendChild(fileNameEl);
+            
+            // Show the preview container
+            previewContainer.classList.remove('d-none');
+        }
+        
+        // Remove file button
+        removeFileBtn.addEventListener('click', function() {
+            // Clear the inputs
+            fileInputImage.value = '';
+            fileInputVideo.value = '';
+            
+            // Clear the preview
+            filePreview.innerHTML = '';
+            previewContainer.classList.add('d-none');
+            
+            currentFileType = null;
+        });
+
+        // Handle reply button clicks
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.comment-reply-btn')) {
+                e.preventDefault();
+                const button = e.target.closest('.comment-reply-btn');
+                const commentId = button.getAttribute('data-comment-id');
+                const username = button.getAttribute('data-username');
+                const replyForm = document.getElementById(`reply-form-${commentId}`);
+                
+                if (replyForm) {
+                    // Hide all other reply forms
+                    document.querySelectorAll('.reply-form-container').forEach(container => {
+                        if (container !== replyForm) {
+                            container.classList.add('d-none');
+                        }
+                    });
+                    
+                    // Toggle current reply form
+                    replyForm.classList.toggle('d-none');
+                    
+                    // Focus on input if form is shown
+                    if (!replyForm.classList.contains('d-none')) {
+                        const input = replyForm.querySelector('input[name="content"]');
+                        if (input) {
+                            input.focus();
+                        }
+                    }
+                }
+            }
+        });
+
+        // Handle reply form submissions
+        document.addEventListener('submit', function(e) {
+            if (e.target.closest('.comment-reply-form')) {
+                e.preventDefault();
+                const form = e.target.closest('.comment-reply-form');
+                const commentId = form.getAttribute('data-comment-id');
+                const content = form.querySelector('input[name="content"]').value;
+                
+                // Get the post ID - first try from the closest comment section, then fallback to the card
+                let postId;
+                const commentSection = form.closest('.collapse');
+                if (commentSection) {
+                    postId = commentSection.id.replace('commentSection-', '');
+                } else {
+                    // Fallback to older method
+                    const postElement = form.closest('.card').querySelector('[data-post-id]');
+                    if (postElement) {
+                        postId = postElement.getAttribute('data-post-id');
+                    }
+                }
+                
+                if (!postId) {
+                    console.error('Could not find post ID');
+                    return;
+                }
+                
+                fetch(`/comment/${commentId}/reply/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        content: content,
+                        post_id: postId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Clear the form
+                        form.reset();
+                        // Hide the reply form
+                        form.closest('.reply-form-container').classList.add('d-none');
+                        
+                        // Refresh comments list immediately
+                        const postId = data.post_id;
+                        const commentsList = document.querySelector(`#commentsList-${postId}`);
+                        if (commentsList) {
+                            // Force a refresh using HTMX
+                            htmx.trigger(commentsList, 'revealed');
+                            
+                            // After a short delay, scroll to the new reply
+                            setTimeout(() => {
+                                const replyElement = document.getElementById(`comment-${data.comment_id}`);
+                                if (replyElement) {
+                                    replyElement.scrollIntoView({ behavior: 'smooth' });
+                                    replyElement.classList.add('highlight-new');
+                                    setTimeout(() => {
+                                        replyElement.classList.remove('highlight-new');
+                                    }, 2000);
+                                }
+                            }, 300);
+                        } else {
+                            console.error(`Comments list element #commentsList-${postId} not found`);
+                        }
+                    } else {
+                        console.error('Error submitting reply:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        });
+    });
+</script>
+{% endblock %} 

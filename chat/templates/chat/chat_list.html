@@ -1,0 +1,92 @@
+{% extends 'chat/base.html' %}
+{% load static %}
+
+{% block title %}Messages | Social Chat{% endblock %}
+
+{% block content %}
+<div class="chat-list-container">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-comments me-2"></i> <span class="text-dark">Messages</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if chat_rooms %}
+                        <div class="list-group list-group-flush">
+                            {% for chat_room in chat_rooms %}
+                                <a href="{% url 'chat_room' room_id=chat_room.id %}" class="list-group-item list-group-item-action chat-room-link">
+                                    <div class="d-flex align-items-center">
+                                        {% if chat_room.is_group_chat %}
+                                            <div class="story-circle" style="width: 50px; height: 50px; min-width: 50px;">
+                                                <div class="d-flex align-items-center justify-content-center h-100 text-white bg-primary" style="border-radius: 50%;">
+                                                    <i class="fas fa-users"></i>
+                                                </div>
+                                            </div>
+                                            <div class="ms-3">
+                                                <h6 class="mb-1">{{ chat_room.name }}</h6>
+                                                <small class="text-muted">
+                                                    {{ chat_room.participants.count }} members
+                                                </small>
+                                            </div>
+                                        {% else %}
+                                            {% for participant in chat_room.participants.all %}
+                                                {% if participant != request.user.profile %}
+                                                    {% if participant.avatar %}
+                                                        <div class="story-circle" style="width: 50px; height: 50px; min-width: 50px;">
+                                                            <img src="{{ participant.avatar.url }}" alt="{{ participant.user.username }}" class="profile-avatar">
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="story-circle" style="width: 50px; height: 50px; min-width: 50px;">
+                                                            <div class="d-flex align-items-center justify-content-center h-100 text-white bg-primary" style="border-radius: 50%;">
+                                                                {{ participant.user.username.0|upper }}
+                                                            </div>
+                                                        </div>
+                                                    {% endif %}
+                                                    <div class="ms-3 flex-grow-1">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <h6 class="mb-1">{{ participant.user.username }}</h6>
+                                                            {% if chat_room.unread_message_count > 0 %}
+                                                                <span class="badge badge-unread">{{ chat_room.unread_message_count }}</span>
+                                                            {% endif %}
+                                                        </div>
+                                                        {% if chat_room.last_message %}
+                                                            <small class="text-muted d-block text-truncate" style="max-width: 200px;">
+                                                                {% if chat_room.last_message.attachment %}
+                                                                    <i class="fas fa-paperclip me-1"></i> Attachment
+                                                                {% else %}
+                                                                    {{ chat_room.last_message.content }}
+                                                                {% endif %}
+                                                            </small>
+                                                            <small class="text-muted">
+                                                                {{ chat_room.last_message.timestamp|date:'M d, h:i a' }}
+                                                            </small>
+                                                        {% else %}
+                                                            <small class="text-muted">No messages yet</small>
+                                                        {% endif %}
+                                                    </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-comments fa-3x text-muted"></i>
+                            </div>
+                            <h5>No messages yet</h5>
+                            <p class="text-muted">Start a conversation with your friends!</p>
+                            <a href="{% url 'friends_list' %}" class="btn btn-primary">Find Friends</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
