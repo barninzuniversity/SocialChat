@@ -33,7 +33,7 @@ DEBUG = not IS_PRODUCTION
 
 # Allowed hosts
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost','https://socialchat-4kod.onrender.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost','socialchat-4kod.onrender.com']
 
 
 # Application definition
