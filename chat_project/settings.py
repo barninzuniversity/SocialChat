@@ -16,24 +16,21 @@ import dj_database_url
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv()
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Environment settings - check if we're in production mode
-ENV = os.environ.get('ENVIRONMENT', 'development')
-IS_PRODUCTION = ENV == 'production'
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', "django-insecure-=w^d36_+==+gevx(*s3jy6377eaygg+&-q@_p_nc-t!v@ux&%i")
+SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-=w^d36_+==+gevx(*s3jy6377eaygg+&-q@_p_nc-t!v@ux&%i")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = not IS_PRODUCTION
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-# Allowed hosts
-
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost','socialchat-4kod.onrender.com']
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,socialchat-4dod.onrender.com').split(',')
 
 
 # Application definition
