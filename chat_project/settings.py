@@ -32,10 +32,8 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', "django-insecure-=w^d36_+==+gev
 DEBUG = not IS_PRODUCTION
 
 # Allowed hosts
-if IS_PRODUCTION:
-    ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
-else:
-    ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost','https://socialchat-4kod.onrender.com']
 
 
 # Application definition
