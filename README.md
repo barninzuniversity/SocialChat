@@ -1,5 +1,4 @@
-# SocialChat
-
+# Social Chat App
 
 A modern, feature-rich social chat application built with Django that combines elements of social media and messaging platforms.
 
@@ -81,7 +80,7 @@ A modern, feature-rich social chat application built with Django that combines e
 
 1. Clone the repository
 ```bash
-git clone https://github.com/barninzuniversity/SocialChat
+git clone <repository-url>
 cd chat_project
 ```
 
