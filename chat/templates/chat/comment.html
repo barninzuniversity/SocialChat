@@ -1,0 +1,91 @@
+{% load humanize %}
+
+<div class="comment d-flex mb-2" id="comment-{{ comment.id }}">
+    <img src="{{ comment.author.avatar.url }}" alt="{{ comment.author.user.username }}" class="profile-avatar-sm me-2">
+    <div class="comment-content p-2 rounded flex-grow-1 shadow-sm">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <a href="{% url 'profile_detail' comment.author.user.username %}" class="fw-bold text-decoration-none">{{ comment.author.user.username }}</a>
+                {% if comment.parent_comment %}
+                <span class="reply-indicator">
+                    <i class="fas fa-reply text-muted mx-1" style="font-size: 0.7rem;"></i>
+                    <a href="#comment-{{ comment.parent_comment.id }}" class="text-muted text-decoration-none" style="font-size: 0.8rem;">@{{ comment.parent_comment.author.user.username }}</a>
+                </span>
+                {% endif %}
+                <p class="mb-0 text-dark">{{ comment.content }}</p>
+            </div>
+            <small class="text-muted ms-2">{{ comment.created_at|timesince }}</small>
+        </div>
+        
+        <!-- Comment reactions -->
+        <div class="comment-actions d-flex mt-2">
+            <div class="dropdown comment-reaction-dropdown me-2">
+                <button class="btn btn-sm btn-link p-0 comment-reaction-trigger {% if user_reaction %}active{% endif %}" 
+                        data-comment-id="{{ comment.id }}"
+                        data-bs-toggle="dropdown" 
+                        aria-expanded="false">
+                    {% if user_reaction %}
+                        {% if user_reaction.reaction_type == 'like' %}
+                            <i class="fas fa-thumbs-up me-1"></i> Like
+                        {% elif user_reaction.reaction_type == 'love' %}
+                            <i class="fas fa-heart me-1 text-danger"></i> Love
+                        {% elif user_reaction.reaction_type == 'haha' %}
+                            <i class="fas fa-laugh-squint me-1 text-warning"></i> Haha
+                        {% elif user_reaction.reaction_type == 'wow' %}
+                            <i class="fas fa-surprise me-1 text-warning"></i> Wow
+                        {% elif user_reaction.reaction_type == 'sad' %}
+                            <i class="fas fa-sad-tear me-1 text-primary"></i> Sad
+                        {% elif user_reaction.reaction_type == 'angry' %}
+                            <i class="fas fa-angry me-1 text-danger"></i> Angry
+                        {% endif %}
+                    {% else %}
+                        <i class="far fa-thumbs-up me-1"></i> Like
+                    {% endif %}
+                    <span class="reaction-count">{{ comment.reactions.count }}</span>
+                </button>
+                <div class="dropdown-menu reaction-dropdown p-2">
+                    <div class="d-flex justify-content-between">
+                        <button class="btn-reaction" data-comment-id="{{ comment.id }}" data-type="like">
+                            <span class="reaction-emoji">👍</span>
+                            <span class="reaction-text">Like</span>
+                        </button>
+                        <button class="btn-reaction" data-comment-id="{{ comment.id }}" data-type="love">
+                            <span class="reaction-emoji">❤️</span>
+                            <span class="reaction-text">Love</span>
+                        </button>
+                        <button class="btn-reaction" data-comment-id="{{ comment.id }}" data-type="haha">
+                            <span class="reaction-emoji">😂</span>
+                            <span class="reaction-text">Haha</span>
+                        </button>
+                        <button class="btn-reaction" data-comment-id="{{ comment.id }}" data-type="wow">
+                            <span class="reaction-emoji">😮</span>
+                            <span class="reaction-text">Wow</span>
+                        </button>
+                        <button class="btn-reaction" data-comment-id="{{ comment.id }}" data-type="sad">
+                            <span class="reaction-emoji">😢</span>
+                            <span class="reaction-text">Sad</span>
+                        </button>
+                        <button class="btn-reaction" data-comment-id="{{ comment.id }}" data-type="angry">
+                            <span class="reaction-emoji">😡</span>
+                            <span class="reaction-text">Angry</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-sm btn-link p-0 comment-reply-btn" 
+                    data-comment-id="{{ comment.id }}"
+                    data-username="{{ comment.author.user.username }}">
+                <i class="far fa-comment me-1"></i> Reply
+            </button>
+        </div>
+        
+        <!-- Replies section -->
+        {% if comment.replies.exists %}
+        <div class="comment-replies mt-2 ps-3 border-start">
+            {% for reply in comment.replies.all %}
+                {% include "chat/comment.html" with comment=reply %}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div> 
