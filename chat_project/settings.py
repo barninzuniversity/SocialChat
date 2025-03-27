@@ -55,6 +55,7 @@ INSTALLED_APPS = [
 # Define middleware list - whitenoise will be added conditionally
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # Always include WhiteNoise
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -64,11 +65,12 @@ MIDDLEWARE = [
     "django_htmx.middleware.HtmxMiddleware",
 ]
 
-# Add WhiteNoise middleware for production
-if IS_PRODUCTION:
-    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+# WhiteNoise is now always included in middleware
+# if IS_PRODUCTION:
+#     MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 ROOT_URLCONF = "chat_project.urls"
+
 
 TEMPLATES = [
     {
