@@ -28,7 +28,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-=w^d36_+==+gevx(*s3jy
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 # Allow all hosts by default
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,socialchat-4kod.onrender.com').split(',')
+ALLOWED_HOSTS = ['*']  # Accept any hostname
 
 # Application definition
 INSTALLED_APPS = [
@@ -138,13 +138,13 @@ CHANNEL_LAYERS = {
     }
 }
 
-# Security settings for production - always enabled
-SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True').lower() == 'true'
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_HSTS_SECONDS = 31536000  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+# Security settings for production - but with safer defaults for troubleshooting
+SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False').lower() == 'true'
+SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', 'False').lower() == 'true'
+SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '0'))  # Disabled by default
+SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'False').lower() == 'true'
+SECURE_HSTS_PRELOAD = os.environ.get('SECURE_HSTS_PRELOAD', 'False').lower() == 'true'
 
 # Authentication settings
 LOGIN_URL = 'login'
