@@ -1,0 +1,15 @@
+<div class="chat-message {% if message.sender == user_profile %}sent{% else %}received{% endif %}">
+    <div class="d-flex {% if message.sender == user_profile %}justify-content-end{% endif %} mb-1">
+        <small class="fw-bold">
+            {% if message.sender != user_profile %}
+                {{ message.sender.user.username }}
+            {% else %}
+                You
+            {% endif %}
+        </small>
+    </div>
+    {{ message.content }}
+    <div class="message-time text-end mt-1">
+        {{ message.timestamp|date:"g:i a" }}
+    </div>
+</div> 

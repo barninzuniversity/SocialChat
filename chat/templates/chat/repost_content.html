@@ -1,0 +1,38 @@
+{% comment %}
+This template is used as a partial for displaying a repost with the original content
+{% endcomment %}
+
+<div class="repost-wrapper">
+    <!-- Repost content -->
+    <p>{{ post.content }}</p>
+    
+    <!-- Original post container -->
+    <div class="original-post mt-3 p-3 border rounded bg-light">
+        <div class="d-flex align-items-center mb-2">
+            <img src="{{ original_post.author.avatar.url }}" alt="{{ original_post.author.user.username }}" class="profile-avatar-sm me-2">
+            <div>
+                <a href="{% url 'profile_detail' original_post.author.user.username %}" class="fw-bold text-decoration-none">
+                    {{ original_post.author.user.username }}
+                </a>
+                <div class="small text-muted">{{ original_post.created_at|date:"F j, Y, g:i a" }}</div>
+            </div>
+        </div>
+        
+        <p class="mb-2">{{ original_post.content }}</p>
+        
+        {% if original_post.image %}
+        <div class="mt-2">
+            <img src="{{ original_post.image.url }}" alt="Original post image" class="img-fluid rounded">
+        </div>
+        {% endif %}
+        
+        {% if original_post.video %}
+        <div class="mt-2">
+            <video controls class="w-100 rounded">
+                <source src="{{ original_post.video.url }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        {% endif %}
+    </div>
+</div> 

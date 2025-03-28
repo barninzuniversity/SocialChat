@@ -1,0 +1,81 @@
+{% load chat_extras %}
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="chat-message {% if message.sender == request.user.profile %}sent{% else %}received{% endif %}" data-message-id="{{ message.id }}">
+            {% if message.reply_to %}
+            <div class="replied-message small text-muted mb-1 border-start ps-2">
+                <div class="d-flex align-items-items-center">
+                    <i class="fas fa-reply me-1"></i>
+                    <span class="fw-bold">{{ message.reply_to.sender.user.username }}:</span>
+                    <span class="ms-1">{{ message.reply_to.content|truncatechars:50 }}</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="message-content">
+                {% if message.content %}
+                    <div class="message-text">{{ message.content }}</div>
+                {% endif %}
+                
+                {% if message.image %}
+                    <div class="message-image">
+                        <img src="{{ message.image.url }}" alt="Message image" class="img-fluid rounded">
+                    </div>
+                {% endif %}
+                
+                {% if message.video %}
+                    <div class="message-video">
+                        <video controls class="rounded">
+                            <source src="{{ message.video.url }}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                {% endif %}
+                
+                {% if message.file %}
+                    <div class="message-file">
+                        <a href="{{ message.file.url }}" class="file-download-button" download>
+                            <i class="fas fa-file"></i>
+                            {{ message.file.name|slice:"11:" }}
+                        </a>
+                    </div>
+                {% endif %}
+                
+                {% if message.reactions.exists %}
+                    <div class="message-reactions mt-1">
+                        {% regroup message.reactions.all by reaction as reaction_list %}
+                        {% for reaction in reaction_list %}
+                            <span class="reaction-bubble" data-emoji="{{ reaction.grouper }}">
+                                {{ reaction.grouper }} {{ reaction.list|length }}
+                            </span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="message-time">
+                {{ message.timestamp|to_user_timezone:request.session.user_timezone }}
+            </div>
+            
+            {% if message.sender != request.user.profile %}
+            <div class="message-actions">
+                <button type="button" class="btn btn-sm" onclick="showReactionModal('{{ message.id }}')">
+                    <i class="far fa-smile"></i>
+                </button>
+                <button type="button" class="btn btn-sm" onclick="showReplyModal('{{ message.id }}')">
+                    <i class="fas fa-reply"></i>
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="text-center py-5 empty-messages-container">
+        <div class="empty-messages-icon">
+            <i class="fas fa-comments mb-3" style="font-size: 3.5rem; opacity: 0.6;"></i>
+        </div>
+        <p class="empty-messages-text mb-0">No messages yet</p>
+        <p class="text-muted small">Start the conversation!</p>
+    </div>
+{% endif %} 

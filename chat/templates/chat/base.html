@@ -1,0 +1,499 @@
+{% load static %}
+{% load chat_extras %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SocialChat{% endblock %}</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2M8 7V17H17V12H12V7H8Z' fill='%234F46E5'/%3E%3C/svg%3E" />
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Instagram font -->
+    <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&display=swap" rel="stylesheet">
+    
+    <!-- Instagram Theme CSS -->
+    <link rel="stylesheet" href="{% static 'css/instagram-theme.css' %}">
+    <!-- SocialChat Logo CSS -->
+    <link rel="stylesheet" href="{% static 'css/logo.css' %}">
+    <!-- Emoji Mart -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.15.0/css/emoji-picker-element.css">
+    
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .content {
+            flex: 1;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #4F46E5;
+        }
+        /* Modern Chat Styling */
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 75%;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            word-wrap: break-word;
+        }
+        .sent {
+            background-color: #0084ff;
+            color: white;
+            margin-left: auto;
+            margin-right: 10px;
+            border-bottom-right-radius: 5px;
+        }
+        .received {
+            background-color: #f0f2f5;
+            color: #050505;
+            margin-left: 10px;
+            border-bottom-left-radius: 5px;
+        }
+        .message-time {
+            font-size: 0.65rem;
+            opacity: 0.8;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        .sent .message-time {
+            color: rgba(255,255,255,0.9);
+            text-align: right;
+            float: right;
+        }
+        .received .message-time {
+            color: #65676b;
+            text-align: left;
+            float: left;
+        }
+        .chat-container {
+            height: 70vh;
+            overflow-y: auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 0;
+        }
+        .chat-input {
+            position: sticky;
+            bottom: 0;
+            background-color: white;
+            padding: 15px;
+            border-top: 1px solid #e4e6eb;
+        }
+        .chat-input .form-control {
+            border-radius: 20px;
+            padding: 10px 15px;
+            background-color: #f0f2f5;
+            border: none;
+        }
+        .chat-input .form-control:focus {
+            box-shadow: none;
+            background-color: #e4e6eb;
+        }
+        .chat-input .btn-primary {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #0084ff;
+            border: none;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid #e4e6eb;
+            padding: 15px;
+        }
+        .profile-avatar {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        .profile-avatar-sm {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        .friend-request {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        
+        /* File Upload Styling */
+        .upload-drop-zone {
+            border: 2px dashed #4F46E5;
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            color: #666;
+            cursor: pointer;
+            background-color: #F0F1FF;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-drop-zone:hover, .upload-drop-zone.dragover {
+            background-color: #E6E8FF;
+            border-color: #3730A3;
+        }
+        
+        /* Post actions and reactions */
+        .post-actions {
+            color: #65676b;
+        }
+        
+        .reactions-badge {
+            background-color: #f0f2f5;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
+        
+        .reactions-dropdown {
+            min-width: 300px;
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .btn-reaction {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 5px 10px;
+            background: none;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .btn-reaction:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+        
+        body.dark .btn-reaction:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+        
+        .reaction-emoji {
+            font-size: 1.5rem;
+            margin-bottom: 2px;
+        }
+        
+        .reaction-text {
+            font-size: 0.7rem;
+        }
+        
+        .comment-content {
+            border-radius: 18px !important;
+            background-color: #f0f2f5;
+        }
+        
+        body.dark .comment-content {
+            background-color: #2d2d2d;
+        }
+        
+        .btn-link {
+            color: #65676b;
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+        
+        .btn-link:hover {
+            color: #1877f2;
+            text-decoration: underline;
+        }
+        
+        #file-preview img {
+            max-height: 100px;
+            border-radius: 5px;
+        }
+        
+        #file-preview video {
+            max-height: 100px;
+            max-width: 200px;
+            border-radius: 5px;
+        }
+        
+        .file-name {
+            font-size: 0.85rem;
+            color: #666;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .reaction-dropdown {
+            min-width: 280px;
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background-color: white;
+            padding: 8px;
+        }
+        
+        body.dark .reaction-dropdown {
+            background-color: #3a3b3c;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .comment-replies {
+            font-size: 0.95em;
+        }
+        
+        .reply-form-container {
+            margin: 8px 0;
+        }
+        
+        .highlight-new {
+            animation: highlight 2s ease-in-out;
+        }
+        
+        @keyframes highlight {
+            0% { background-color: rgba(255, 251, 204, 0.8); }
+            100% { background-color: transparent; }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="{% if request.session.dark_mode %}dark-mode{% endif %}">
+    <!-- Splash Screen -->
+    <div class="splash-screen">
+        <div class="splash-logo">
+            <div class="splash-icon">
+                <i class="fas fa-comments"></i>
+            </div>
+            <div class="splash-text">SocialChat</div>
+        </div>
+    </div>
+    
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg {% if request.session.dark_mode %}bg-dark navbar-dark{% else %}bg-white{% endif %} sticky-top mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <div class="socialchat-logo-container">
+                    <div class="socialchat-logo-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <span class="socialchat-logo">SocialChat</span>
+                </div>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home' %}">
+                            <i class="fas fa-home"></i>
+                            <span class="d-lg-none ms-2">Home</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'chat_list' %}">
+                            <i class="fas fa-comment"></i>
+                            <span class="d-lg-none ms-2">Messages</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'friends_list' %}">
+                            <i class="fas fa-user-friends"></i>
+                            <span class="d-lg-none ms-2">Friends</span>
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="d-flex align-items-center">
+                    <!-- User profile dropdown -->
+                    {% if user.is_authenticated %}
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            {% if user.profile.avatar %}
+                            <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="profile-avatar-sm me-2">
+                            {% else %}
+                            <div class="profile-avatar-sm me-2 d-flex align-items-center justify-content-center bg-primary text-white">
+                                {{ user.username.0|upper }}
+                            </div>
+                            {% endif %}
+                            <span class="d-none d-md-inline">{{ user.username }}</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="{% url 'profile_detail' username=user.username %}">
+                                <i class="fas fa-user me-2"></i> Profile
+                            </a>
+                            <a class="dropdown-item" href="{% url 'edit_profile' %}">
+                                <i class="fas fa-cog me-2"></i> Settings
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="{% url 'logout' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-primary me-2">Log In</a>
+                    <a href="{% url 'signup' %}" class="btn btn-outline-primary">Sign Up</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main container -->
+    <div class="container">
+        <!-- Content loader for HTMX requests -->
+        <div class="content-loader">
+            <div class="loader-dots">
+                <div class="loader-dot"></div>
+                <div class="loader-dot"></div>
+                <div class="loader-dot"></div>
+            </div>
+        </div>
+        
+        {% if messages %}
+        <div class="row">
+            <div class="col-md-12">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.3"></script>
+    
+    <!-- Instagram theme JS -->
+    <script src="{% static 'js/components/animations.js' %}"></script>
+    <script src="{% static 'js/components/dark-mode.js' %}"></script>
+    <script src="{% static 'js/components/signup.js' %}"></script>
+    
+    <!-- Page specific animations -->
+    {% if request.resolver_match.url_name == 'chat_room' %}
+    <script src="{% static 'js/components/chat-room.js' %}"></script>
+    {% elif request.resolver_match.url_name == 'home' %}
+    <script src="{% static 'js/components/home.js' %}"></script>
+    {% elif request.resolver_match.url_name == 'profile_detail' or request.resolver_match.url_name == 'edit_profile' %}
+    <script src="{% static 'js/components/profile.js' %}"></script>
+    {% elif request.resolver_match.url_name == 'friends_list' or request.resolver_match.url_name == 'blocked_users' %}
+    <script src="{% static 'js/components/friends-list.js' %}"></script>
+    {% elif request.resolver_match.url_name == 'chat_list' %}
+    <script src="{% static 'js/components/chat-list.js' %}"></script>
+    {% endif %}
+    
+    {% if "comment" in request.path %}
+    <script src="{% static 'js/components/comment.js' %}"></script>
+    {% endif %}
+    
+    {% block extra_js %}{% endblock %}
+    <script src="{% static 'js/components/post-reactions.js' %}"></script>
+    <!-- Add CSRF token meta tag -->
+    <meta name="csrf-token" content="{{ csrf_token }}">
+
+    <!-- HTMX -->
+    <script>
+      // Initialize HTMX with preserve enabled
+      document.addEventListener('DOMContentLoaded', function() {
+        htmx.config.useTemplateFragments = true;
+        htmx.config.defaultSwapStyle = 'innerHTML';
+        htmx.config.refreshOnHistoryMiss = false;
+        
+        // Set up HTMX preserve feature
+        htmx.defineExtension('preserve', {
+          onEvent: function(name, evt) {
+            if (name === 'htmx:beforeSwap') {
+              const target = evt.detail.target;
+              if (target.hasAttribute('hx-preserve')) {
+                // Save scroll position
+                target.dataset.scrollTop = target.scrollTop;
+              }
+            }
+            if (name === 'htmx:afterSwap') {
+              const target = evt.detail.target;
+              if (target.hasAttribute('hx-preserve') && target.dataset.scrollTop) {
+                // Restore scroll position
+                target.scrollTop = parseInt(target.dataset.scrollTop);
+              }
+            }
+          }
+        });
+        
+        // Initialize the extension
+        htmx.extendEvents(['htmx:beforeSwap', 'htmx:afterSwap']);
+      });
+    </script>
+    <script>
+        // Splash screen handling
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                const splashScreen = document.querySelector('.splash-screen');
+                splashScreen.style.opacity = '0';
+                setTimeout(function() {
+                    splashScreen.style.display = 'none';
+                }, 500);
+            }, 1500);
+        });
+    </script>
+
+    <!-- User Timezone Detection -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get user's timezone using Intl API
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            
+            // Send timezone to server if not already set or different
+            const currentTimezone = localStorage.getItem('userTimezone');
+            if (currentTimezone !== timezone) {
+                localStorage.setItem('userTimezone', timezone);
+                
+                // Send timezone to server via fetch
+                fetch('{% url "set_timezone" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: 'timezone=' + encodeURIComponent(timezone)
+                }).then(response => {
+                    if (response.ok) {
+                        console.log('Timezone set successfully');
+                        // Reload the page to update timestamps
+                        if (window.location.pathname.includes('/chat/')) {
+                            window.location.reload();
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html> 
