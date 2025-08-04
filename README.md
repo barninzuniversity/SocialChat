@@ -159,11 +159,10 @@ python manage.py runserver
 - **animations.js**: UI animations and transitions
 - **dark-mode.js**: Theme switching functionality
 
-## License
 
-[MIT License](LICENSE)
 
 ## Acknowledgements
 - Bootstrap for the responsive UI framework
 - FontAwesome for iconography
+
 - HTMX for seamless page updates 
